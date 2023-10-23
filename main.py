@@ -1,21 +1,40 @@
+import json
+from pprint import pprint
 import certifi
 import motor.motor_asyncio
+import uvicorn
 from beanie import init_beanie
-from beanie.odm.settings import document
 from fastapi import FastAPI, Depends
 from fastapi import Request, HTTPException, Header
+from datetime import datetime
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
+from models.trade import Account
+from models.user import User
+import hello.login
+import hello.trade
+
 
 app = FastAPI()
+kill_switch_enabled = False
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 client = motor.motor_asyncio.AsyncIOMotorClient(
     "mongodb+srv://Naad:naad2002@cluster0.7redvzp.mongodb.net/",
     tlsCAfile=certifi.where(),
 )
+
 try:
     db = client.algotrading
 except Exception as e:
-    JSONResponse(
+    pprint(
         {
             "message": "Database won't connect",
             "error_message": e,
@@ -25,32 +44,74 @@ except Exception as e:
 
 
 @app.on_event("startup")
-async def start_database():
-    await init_beanie(database=db, document_models=[])
+async def startup_database():
+    await init_beanie(database=db, document_models=[User, Account])
+
+
+@app.middleware("http")
+async def middleware(request: Request, call_next):
+    if request.url.path == "/toggle-kill-switch":
+        response = await call_next(request)
+        return response
+
+    if kill_switch_enabled:
+        raise HTTPException(
+            status_code=503,
+            detail="API disabled, Judging Round over",
+        )
+
+    response = await call_next(request)
+    return response
+
+
+@app.post("/toggle-kill-switch")
+async def toggle_kill_switch():
+    global kill_switch_enabled
+    kill_switch_enabled = not kill_switch_enabled
+    return {
+        "status": "Kill switch is now "
+        + ("enabled" if kill_switch_enabled else "disabled")
+    }
 
 
 @app.get("/")
 async def home():
+    current_datetime = datetime.now()
+
     metadata = {
-        "name": "AlgoTradingCompetition",
-        "description": "A platform for hosting IEEECS Algotrading Competition",
-        "version": "1.0.0",
-        "author": "Naad Dantale",
-        "license": "MIT",
-        "repository": "https://github.com/yourusername/AlgoTradingCompetition",
-        "dependencies": {
-            "fastapi": "0.70.0",
-            "beanie": "0.16.3",
-            # Add other dependencies and their versions here
+        "metadata": {
+            "name": "AlgoTradingCompetition",
+            "description": "Backend for the platform for hosting MUJ IEEE Computer Society Algotrading Competition",
+            "version": "1",
+            "author": "Naad Dantale",
+            "repository": "https://github.com/last-brain-cell/algotrading",
+            "dependencies": {
+                "fastapi": "0.104.0",
+                "beanie": "1.23.0",
+                "pydantic": "2.4.2",
+                "pymongo": "4.5.0",
+                "uvicorn": "0.23.2",
+                "pyJWT": "2.8.0",
+                "python-decouple": "3.8",
+                "decouple": "0.0.7",
+                "certifi": "2023.7.22",
+                "motor": "3.3.1",
+                "email-validator": "2.1.0",
+            },
+            "keywords": ["algorithmic trading", "competition", "API"],
+            "contact": {
+                "email": "naadkd@gmail.com",
+                "mobile": "+91 7722087410",
+            },
         },
-        "keywords": ["algorithmic trading", "competition", "API"],
-        "contact": {
-            "email": "your@email.com",
-            "website": "https://www.yourwebsite.com",
-        },
-        "support": {
-            "email": "support@yourwebsite.com",
-            "documentation": "https://github.com/yourusername/AlgoTradingCompetition/wiki",
-        },
+        "last_ran": current_datetime.strftime("%Y-%m-%d %H:%M:%S"),
     }
+
     return JSONResponse(content=metadata)
+
+
+app.include_router(hello.login.router, tags=["User"], prefix="/user")
+app.include_router(hello.trade.router, tags=["Trade"], prefix="/user")
+
+if __name__ == "__main__":
+    uvicorn.run(app=app, host="127.0.0.1", port=8000, reload=True)

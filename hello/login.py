@@ -1,6 +1,7 @@
 from typing import List, Dict
 from fastapi import APIRouter, Body, Query, HTTPException
-from models.user import User, UserSignup, UserLogin
+
+from models.user import User, UserLogin
 from models.trade import Account
 from utils.auth_handler import signJWT
 from utils.create_secret import create_secret
@@ -8,24 +9,38 @@ from utils.create_secret import create_secret
 router = APIRouter()
 
 
-@router.post("/signup", tags=["user"])
-async def create_user(user: UserSignup = Body(...)):
+@router.post("/signup")
+async def create_user(user: User = Body(...)):
     existing_user = await User.find_one(User.email == user.email)
     if existing_user:
         raise HTTPException(
             status_code=400, detail="User with this email already exists."
         )
 
-    new_user = await User(**user.dict()).create()
+    secret = create_secret()
+    token = signJWT(user.email, role="participant", secret=secret)
 
-    account = Account(participant_id=new_user.email, balance=0, holdings={})
+    # Create the User
+    new_user = await user.create()
+
+    # Create the Account
+    account = Account(
+        email=new_user.email,
+        balance=0.0,
+        holdings={},
+        order_history=[],
+        profit_loss=0.0,
+    )
+    existing_account = await Account.find_one(Account.email == account.email)
+    if existing_account:
+        raise HTTPException(status_code=400, detail="Account already exists")
+
     await account.create()
 
-    token = signJWT(new_user.email, role="participant", secret=create_secret())
-    return {"user": new_user, "team_name": new_user.team_name, "token": token}
+    return {"user": new_user, "token": token, "secret": secret}
 
 
-@router.post("/login", tags=["user"])
+@router.post("/login")
 async def user_login(user: UserLogin = Body(...)):
     existing_user = await User.find_one(
         User.email == user.email and User.password == user.password
@@ -39,12 +54,13 @@ async def user_login(user: UserLogin = Body(...)):
                 detail="Login failed. Please check your email and password.",
             )
 
+    secret = create_secret()
     if existing_user:
-        token = signJWT(email=user.email, role="participant", secret=create_secret())
+        token = signJWT(email=user.email, role="participant", secret=secret)
         return {
             "user": existing_user,
-            "team_name": existing_user.team_name,
             "token": token,
+            "secret": secret,
         }
     else:
         raise HTTPException(status_code=404, detail="User Not Found")

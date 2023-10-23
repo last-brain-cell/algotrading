@@ -56,9 +56,3 @@ class PerformanceMetrics(BaseModel):
     returns: float
     sharpe_ratio: float
     draw_down: float
-
-
-class EventLog(Document):
-    timestamp: datetime
-    event_type: str
-    event_description: str
