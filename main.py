@@ -11,8 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 from models.trade import Account
 from models.user import User
-import hello.login
-import hello.trade
+import Routes.login
+import Routes.trade
 
 
 app = FastAPI()
@@ -97,6 +97,7 @@ async def home():
                 "certifi": "2023.7.22",
                 "motor": "3.3.1",
                 "email-validator": "2.1.0",
+                "cryptography": " ",
             },
             "keywords": ["algorithmic trading", "competition", "API"],
             "contact": {
@@ -110,8 +111,8 @@ async def home():
     return JSONResponse(content=metadata)
 
 
-app.include_router(hello.login.router, tags=["User"], prefix="/user")
-app.include_router(hello.trade.router, tags=["Trade"], prefix="/user")
+app.include_router(Routes.login.router, tags=["User"], prefix="/user")
+app.include_router(Routes.trade.router, tags=["Trade"], prefix="/user")
 
 if __name__ == "__main__":
     uvicorn.run(app=app, host="127.0.0.1", port=8000, reload=True)
