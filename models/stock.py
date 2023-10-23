@@ -1,13 +1,5 @@
-from typing import List
-from beanie import Document
-from pydantic import BaseModel, EmailStr
 from enum import Enum
-from datetime import datetime
-
-
-class Position(Enum):
-    long = "Long"
-    short = "Short"
+from pydantic import BaseModel, EmailStr
 
 
 class Stock(Enum):
@@ -22,19 +14,15 @@ class Stock(Enum):
     IBM = "IBM"  # International Business Machines Corporation
 
 
-class Trade(BaseModel):
+class GetStock(BaseModel):
     email: EmailStr
     stock: Stock
-    position: Position
-    buy_price: float
-    sell_price: float
-    timestamp: datetime
-    quantity: int
 
 
-class Account(Document):
+class PostStock(BaseModel):
     email: EmailStr
-    balance: float
-    holdings: dict
-    trade_history: List[Trade]
-    profit_loss: float
+    stock: Stock
+    price: float
+    change_point: float
+    change_percentage: float
+    total_vol: str

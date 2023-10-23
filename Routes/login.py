@@ -28,7 +28,7 @@ async def create_user(user: User = Body(...)):
         email=new_user.email,
         balance=0.0,
         holdings={},
-        order_history=[],
+        trade_history=[],
         profit_loss=0.0,
     )
     existing_account = await Account.find_one(Account.email == account.email)
