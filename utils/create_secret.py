@@ -2,4 +2,9 @@ import secrets
 
 
 def create_secret():
-    return secrets.token_hex(16)
+    secret = secrets.token_hex(16)
+
+    with open("secret", "w") as file:
+        file.write(secret)
+
+    return "secret"

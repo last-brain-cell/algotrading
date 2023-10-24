@@ -1,11 +1,6 @@
-# This file is responsible for signing , encoding , decoding and returning JWTs
-import os
 import time
 from typing import Dict
 import jwt
-from decouple import config
-
-# JWT_ALGORITHM = config()
 
 
 def token_response(token: str):
@@ -21,7 +16,7 @@ def signJWT(email: str, role: str, secret) -> Dict[str, str]:
     }
     token = jwt.encode(payload, secret, algorithm="HS256")
 
-    return token_response(token)
+    return {"access_token": token}
 
 
 def decodeJWT(token: str, secret) -> dict:

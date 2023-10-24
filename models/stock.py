@@ -14,11 +14,6 @@ class Stock(Enum):
     IBM = "IBM"  # International Business Machines Corporation
 
 
-class GetStock(BaseModel):
-    email: EmailStr
-    stock: Stock
-
-
 class PostStock(BaseModel):
     email: EmailStr
     stock: Stock

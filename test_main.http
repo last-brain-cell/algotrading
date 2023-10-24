@@ -1,6 +1,0 @@
-# Test your FastAPI endpoints
-
-# curl -X POST http://localhost:8000/toggle-kill-switch -H "API-Key: admin" -H "Accept: application/json"
-POST http://127.0.0.1:8000/hello
-API-Key: admin
-Accept: application/json

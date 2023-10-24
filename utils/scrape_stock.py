@@ -3,7 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 
 
-class Scrapy:
+class StockScraper:
     def __init__(self, stock):
         self.stock = stock.strip().lower()
         self.url = (
@@ -41,3 +41,7 @@ class Scrapy:
         ).group()
 
         return result
+
+
+if __name__ == "__main__":
+    print(StockScraper("AAPL").getPage().text)

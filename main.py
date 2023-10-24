@@ -1,4 +1,3 @@
-import json
 from pprint import pprint
 import certifi
 import motor.motor_asyncio
@@ -13,7 +12,9 @@ from models.trade import Account
 from models.user import User
 import Routes.login
 import Routes.trade
-
+import Routes.stocks
+import Routes.admin
+from utils.auth.auth_bearer import JWTBearerAdmin
 
 app = FastAPI()
 kill_switch_enabled = False
@@ -26,9 +27,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# client = motor.motor_asyncio.AsyncIOMotorClient(
+#     "mongodb+srv://Naad:naad2002@cluster0.7redvzp.mongodb.net/",
+#     tlsCAfile=certifi.where(),
+# )
 client = motor.motor_asyncio.AsyncIOMotorClient(
-    "mongodb+srv://Naad:naad2002@cluster0.7redvzp.mongodb.net/",
-    tlsCAfile=certifi.where(),
+    "mongodb://localhost:27017/",
 )
 
 try:
@@ -64,7 +68,9 @@ async def middleware(request: Request, call_next):
     return response
 
 
-@app.post("/toggle-kill-switch")
+@app.post(
+    "/toggle-kill-switch", dependencies=[Depends(JWTBearerAdmin())], tags=["Home"]
+)
 async def toggle_kill_switch():
     global kill_switch_enabled
     kill_switch_enabled = not kill_switch_enabled
@@ -74,8 +80,8 @@ async def toggle_kill_switch():
     }
 
 
-@app.get("/")
-async def home():
+@app.get("/", tags=["Home"])
+async def metadata():
     current_datetime = datetime.now()
 
     metadata = {
@@ -112,7 +118,9 @@ async def home():
 
 
 app.include_router(Routes.login.router, tags=["User"], prefix="/user")
-app.include_router(Routes.trade.router, tags=["Trade"], prefix="/user")
+app.include_router(Routes.trade.router, tags=["Trade"], prefix="/trade")
+app.include_router(Routes.stocks.router, tags=["Stock"], prefix="/stock")
+app.include_router(Routes.admin.router, tags=["Admin"], prefix="/admin")
 
 if __name__ == "__main__":
     uvicorn.run(app=app, host="127.0.0.1", port=8000, reload=True)

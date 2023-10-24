@@ -22,7 +22,13 @@ class Stock(Enum):
     IBM = "IBM"  # International Business Machines Corporation
 
 
+class Status(Enum):
+    open = "open"
+    closed = "closed"
+
+
 class Trade(BaseModel):
+    trade_id: str
     email: EmailStr
     stock: Stock
     position: Position
@@ -30,6 +36,12 @@ class Trade(BaseModel):
     sell_price: float
     timestamp: datetime
     quantity: int
+    status: Status
+
+
+class StopTrade(BaseModel):
+    email: EmailStr
+    trade_id: str
 
 
 class Account(Document):

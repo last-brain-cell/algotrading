@@ -1,9 +1,8 @@
-from typing import List, Dict
-from fastapi import APIRouter, Body, Query, HTTPException
+from fastapi import APIRouter, Body, HTTPException
 
 from models.user import User, UserLogin
 from models.trade import Account
-from utils.auth_handler import signJWT
+from utils.auth.auth_handler import signJWT
 from utils.create_secret import create_secret
 
 router = APIRouter()
@@ -17,16 +16,13 @@ async def create_user(user: User = Body(...)):
             status_code=400, detail="User with this email already exists."
         )
 
-    secret = create_secret()
-    token = signJWT(user.email, role="participant", secret=secret)
-
     # Create the User
     new_user = await user.create()
 
     # Create the Account
     account = Account(
         email=new_user.email,
-        balance=0.0,
+        balance=2000,
         holdings={},
         trade_history=[],
         profit_loss=0.0,
@@ -37,7 +33,8 @@ async def create_user(user: User = Body(...)):
 
     await account.create()
 
-    return {"user": new_user, "token": token, "secret": secret}
+    secret = create_secret()
+    return signJWT(user.email, role="participant", secret=secret)
 
 
 @router.post("/login")
@@ -56,11 +53,7 @@ async def user_login(user: UserLogin = Body(...)):
 
     secret = create_secret()
     if existing_user:
-        token = signJWT(email=user.email, role="participant", secret=secret)
-        return {
-            "user": existing_user,
-            "token": token,
-            "secret": secret,
-        }
+        return signJWT(email=str(user.email), role="participant", secret=secret)
+
     else:
         raise HTTPException(status_code=404, detail="User Not Found")
